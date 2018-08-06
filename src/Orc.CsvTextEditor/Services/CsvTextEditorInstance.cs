@@ -351,8 +351,38 @@ namespace Orc.CsvTextEditor
                 PerformAutoComplete(e.Text);
         }
 
+        private string GetCurrentCellContent()
+        {
+            var location = GetLocation();
+
+            var text = GetText();
+            var cellIndex = location.Line.Offset + location.Column.Offset;
+            var cellWidth = location.Column.Width;
+
+            if (cellIndex + cellWidth < text.Length)
+            {
+                return text.Substring(cellIndex, cellWidth);
+            } else
+            {
+                return text.Substring(cellIndex, text.Length - cellIndex);
+            }         
+        }
+
+        private string GetTrimmedCurrentCellContent()
+        {
+            return GetCurrentCellContent().Trim(new char[]{',','"'});
+        }
+
         private void PerformAutoComplete(string inputText)
         {
+            string trimmedCellContent = GetTrimmedCurrentCellContent();
+
+            if (!string.IsNullOrWhiteSpace(trimmedCellContent))
+            {
+                _completionWindow?.Close();
+                return;
+            }
+
             if (string.IsNullOrWhiteSpace(inputText))
             {
                 _completionWindow?.Close();
@@ -363,6 +393,9 @@ namespace Orc.CsvTextEditor
                 return;
 
             var columnIndex = GetCurrentColumnIndex();
+
+
+
             var data = _textEditor.GetCompletionDataForText(inputText, columnIndex, _elementGenerator.Lines);
 
             if (!data.Any())
